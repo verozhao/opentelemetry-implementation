@@ -1,0 +1,63 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+  
+  memory_limiter:
+    limit_mib: 512
+    check_interval: 5s
+
+  resource:
+    attributes:
+      - key: environment
+        value: development
+        action: upsert
+
+exporters:
+  # Export to Jaeger using OTLP
+  otlp/jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  # Export logs to OpenSearch via Elasticsearch exporter
+  elasticsearch:
+    endpoints: [http://opensearch:9200]
+    logs_index: otel-logs
+    traces_index: otel-traces
+
+  # Prometheus metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+
+  # Debug exporter for troubleshooting
+  logging:
+    loglevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/jaeger, elasticsearch, logging]
+    
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [elasticsearch, logging]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus, logging]
+
+  extensions: []
