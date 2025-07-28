@@ -1,143 +1,121 @@
-# OpenTelemetry Implementation with FastAPI
+# OpenTelemetry Distributed Tracing Demo
 
-A simple distributed tracing implementation showcasing OpenTelemetry with two FastAPI microservices.
+Simple demo showing distributed tracing between two FastAPI services using OpenTelemetry.
 
-## Architecture
+## What This Does
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   User Service  │───▶│ Product Service │    │ OpenTelemetry   │
-│   (Port 8001)   │    │   (Port 8002)   │───▶│   Collector     │
-│                 │    │                 │    │   (Port 4317)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│    OpenSearch   │    │     Jaeger      │    │   OpenSearch    │
-│   (Port 9200)   │    │  (Port 16686)   │    │   Dashboards    │
-│                 │    │                 │    │   (Port 5601)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+- User Service calls Product Service
+- OpenTelemetry traces the request across both services
+- View traces in Jaeger UI
 
-## Features
+## Setup & Run
 
-- **Distributed Tracing**: Complete request tracing across microservices
-- **OpenTelemetry Integration**: Industry-standard observability framework
-- **Simple Setup**: Minimal configuration for learning and testing
-- **Cross-Service Communication**: User service calls Product service with trace propagation
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.8+
-- Docker & Docker Compose
-- `pip install fastapi httpx opentelemetry-api opentelemetry-sdk opentelemetry-instrumentation-fastapi opentelemetry-instrumentation-httpx opentelemetry-exporter-otlp`
-
-### 1. Start Infrastructure
-
-```bash
-# Start OpenTelemetry Collector, Jaeger, and OpenSearch
-docker-compose up -d
-
-# Verify services are running
-curl http://localhost:9200/_cluster/health
-```
-
-### 2. Install Dependencies
-
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
+### 2. Start Infrastructure (Jaeger + OpenTelemetry Collector)
+```bash
+docker-compose up -d
+```
+
 ### 3. Start Services
 
+**Terminal 1 - Product Service:**
 ```bash
-# Terminal 1 - User Service (port 8001)
-cd services/user-service
-SERVICE_NAME=user-service PRODUCT_SERVICE_URL=http://localhost:8002 python main.py
-
-# Terminal 2 - Product Service (port 8002)  
 cd services/product-service
-SERVICE_NAME=product-service python main.py
+python main.py
+```
+This starts on `http://localhost:8000`
+
+**Terminal 2 - User Service:**
+```bash
+cd services/user-service
+PRODUCT_SERVICE_URL=http://localhost:8000 python main.py
+```
+This starts on `http://localhost:8000` (will conflict - need to change port)
+
+**Fix port conflict - Edit user service main.py:**
+Change the last line to:
+```python
+uvicorn.run(app, host="0.0.0.0", port=8001)
 ```
 
-### 4. Test Distributed Tracing
-
+**Restart User Service:**
 ```bash
-# Test individual services
+cd services/user-service
+PRODUCT_SERVICE_URL=http://localhost:8000 python main.py
+```
+Now runs on `http://localhost:8001`
+
+## Test Distributed Tracing
+
+### 1. Test Individual Services
+```bash
+# Product service
+curl http://localhost:8000/health
+# Expected: {"status":"healthy","service":"product-service"}
+
+# User service  
 curl http://localhost:8001/health
-curl http://localhost:8002/health
-
-# Test cross-service call (creates distributed trace)
-curl http://localhost:8001/users/1/recommendations
+# Expected: {"status":"healthy","service":"user-service"}
 ```
 
-### 5. View Traces
-
-- **Jaeger UI**: http://localhost:16686
-- **OpenSearch Dashboards**: http://localhost:5601
-
-## API Endpoints
-
-### User Service (Port 8001)
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /health` | Health check |
-| `GET /users` | List all users |
-| `GET /users/{id}` | Get user by ID |
-| `GET /users/{id}/recommendations` | Get recommendations (calls Product Service) |
-
-### Product Service (Port 8002)
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /health` | Health check |
-| `GET /products` | List all products |
-| `GET /products/recommend` | Get product recommendations |
-
-## Testing Distributed Tracing
-
-The key endpoint for testing distributed tracing is:
-
+### 2. Test Cross-Service Call (Creates Distributed Trace)
 ```bash
 curl http://localhost:8001/users/1/recommendations
 ```
 
-This creates a trace that spans both services:
-1. User Service receives request
-2. User Service calls Product Service `/products/recommend`
-3. Product Service returns recommendations
-4. User Service returns combined response
+**Expected Response:**
+```json
+{
+  "user": {
+    "id": 1,
+    "name": "John Doe", 
+    "email": "john@example.com"
+  },
+  "products": [
+    {"id": 1, "name": "Laptop Pro", "category": "electronics", "price": 1299.99},
+    {"id": 2, "name": "Wireless Headphones", "category": "electronics", "price": 199.99},
+    {"id": 3, "name": "Programming Book", "category": "books", "price": 49.99}
+  ]
+}
+```
 
-View the complete trace in Jaeger UI to see the distributed request flow.
+### 3. View Traces in Jaeger
+1. Open http://localhost:16686
+2. Select "user-service" from the Service dropdown
+3. Click "Find Traces"
+4. Click on a trace to see the distributed request flow:
+   - `user-service: get_user_recommendations` 
+   - `product-service: recommend_products`
 
-## Environment Variables
+## Troubleshooting
 
-- `SERVICE_NAME`: Service identifier for OpenTelemetry
-- `OTEL_EXPORTER_OTLP_ENDPOINT`: OpenTelemetry Collector endpoint (default: http://localhost:4317)
-- `PRODUCT_SERVICE_URL`: Product service URL for user service calls
+**Services won't start:**
+- Check ports aren't in use: `lsof -i :8000` and `lsof -i :8001`
+- Make sure you edited user service to use port 8001
 
-## Stopping Services
+**No traces in Jaeger:**
+- Wait 10-20 seconds after making requests
+- Check services are running: `curl http://localhost:8000/health`
+- Check docker containers: `docker-compose ps`
 
+**Port conflicts:**
+- Product service: port 8000
+- User service: port 8001 (after editing)
+- Jaeger UI: port 16686
+
+## Stop Everything
 ```bash
-# Stop infrastructure
+# Stop Python services: Ctrl+C in terminals
+# Stop infrastructure:
 docker-compose down
-
-# Stop Python services with Ctrl+C
 ```
 
-## Technologies Used
-
-- **FastAPI**: Python web framework
-- **OpenTelemetry**: Observability framework
-- **OpenSearch**: Search and analytics engine
-- **Jaeger**: Distributed tracing platform
-- **Docker**: Infrastructure containerization
-- **HTTPX**: Async HTTP client
-
-## License
-
-MIT License
+## Files Explained
+- `services/user-service/main.py` - User service (calls Product service)
+- `services/product-service/main.py` - Product service (returns recommendations)
+- `docker-compose.yml` - Runs Jaeger, OpenTelemetry Collector, OpenSearch
+- `otel-collector-config.yaml` - Routes traces from services to Jaeger

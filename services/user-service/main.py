@@ -13,7 +13,7 @@ from opentelemetry.propagate import inject
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "user-service")
 OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://localhost:8002")
+PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://localhost:8000")
 
 # OpenTelemetry setup
 resource = Resource.create({"service.name": SERVICE_NAME})
@@ -75,4 +75,4 @@ async def get_user_recommendations(user_id: int):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_config=None)
+    uvicorn.run(app, host="0.0.0.0", port=8001, log_config=None)
