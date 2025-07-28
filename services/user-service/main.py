@@ -15,7 +15,6 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "user-service")
 OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://localhost:8000")
 
-# OpenTelemetry setup
 resource = Resource.create({"service.name": SERVICE_NAME})
 trace.set_tracer_provider(TracerProvider(resource=resource))
 tracer = trace.get_tracer(__name__)
@@ -60,7 +59,6 @@ async def get_user_recommendations(user_id: int):
         
         user = users_db[user_id]
         
-        # Call product service
         headers = {}
         inject(headers)
         

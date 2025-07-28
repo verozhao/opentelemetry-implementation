@@ -12,7 +12,9 @@
       "Bash(echo:*)",
       "Bash(rm:*)",
       "Bash(docker:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(kill:*)",
+      "Bash(lsof:*)"
     ],
     "deny": []
   }

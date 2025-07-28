@@ -12,7 +12,6 @@ from opentelemetry.propagate import extract
 SERVICE_NAME = os.getenv("SERVICE_NAME", "product-service")
 OTEL_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
 
-# OpenTelemetry setup
 resource = Resource.create({"service.name": SERVICE_NAME})
 trace.set_tracer_provider(TracerProvider(resource=resource))
 tracer = trace.get_tracer(__name__)
@@ -47,10 +46,9 @@ async def get_products():
 @app.get("/products/recommend")
 async def recommend_products(request: Request):
     with tracer.start_as_current_span("recommend_products") as span:
-        # Extract parent context from headers
         parent_context = extract(dict(request.headers))
         
-        # Simple recommendation: return all products
+        # Simple recommendation for demostration, return all products
         products = list(products_db.values())
         return products
 
