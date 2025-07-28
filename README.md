@@ -20,6 +20,7 @@ pip install -r requirements.txt
 docker-compose up -d
 ```
 
+
 ### 3. Start Services
 
 **Terminal 1 - Product Service:**
@@ -27,50 +28,30 @@ docker-compose up -d
 cd services/product-service  
 python main.py
 ```
-This starts on `http://localhost:8000`
+`http://localhost:8000`
 
 **Terminal 2 - User Service:**
 ```bash
 cd services/user-service
 python main.py  
 ```
-This starts on `http://localhost:8001` (port already configured)
+`http://localhost:8001`
 
-## Test Distributed Tracing
-
-### 1. Test Individual Services
+### 4. Test Individual Services
 ```bash
 # Product service
 curl http://localhost:8000/health
-# Expected: {"status":"healthy","service":"product-service"}
 
 # User service  
 curl http://localhost:8001/health
-# Expected: {"status":"healthy","service":"user-service"}
 ```
 
-### 2. Test Cross-Service Call (Creates Distributed Trace)
+### 5. Test Cross-Service Call (Creates Distributed Trace)
 ```bash
 curl http://localhost:8001/users/1/recommendations
 ```
 
-**Expected Response:**
-```json
-{
-  "user": {
-    "id": 1,
-    "name": "John Doe", 
-    "email": "john@example.com"
-  },
-  "products": [
-    {"id": 1, "name": "Laptop Pro", "category": "electronics", "price": 1299.99},
-    {"id": 2, "name": "Wireless Headphones", "category": "electronics", "price": 199.99},
-    {"id": 3, "name": "Programming Book", "category": "books", "price": 49.99}
-  ]
-}
-```
-
-### 3. View Traces in Jaeger
+### 6. View Traces in Jaeger
 1. Open http://localhost:16686
 2. Select "user-service" from the Service dropdown
 3. Click "Find Traces"
