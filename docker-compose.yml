@@ -78,40 +78,6 @@ services:
     networks:
       - otel-network
 
-  # User Service (Service A)
-  user-service:
-    build:
-      context: .
-      dockerfile: services/user-service/Dockerfile
-    container_name: user-service
-    ports:
-      - "8001:8000"
-    environment:
-      - SERVICE_NAME=user-service
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - OTEL_RESOURCE_ATTRIBUTES=service.name=user-service,service.version=1.0.0
-      - PRODUCT_SERVICE_URL=http://product-service:8000
-    depends_on:
-      - otel-collector
-    networks:
-      - otel-network
-
-  # Product Service (Service B)
-  product-service:
-    build:
-      context: .
-      dockerfile: services/product-service/Dockerfile
-    container_name: product-service
-    ports:
-      - "8002:8000"
-    environment:
-      - SERVICE_NAME=product-service
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - OTEL_RESOURCE_ATTRIBUTES=service.name=product-service,service.version=1.0.0
-    depends_on:
-      - otel-collector
-    networks:
-      - otel-network
 
 volumes:
   opensearch-data:
